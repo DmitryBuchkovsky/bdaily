@@ -1,0 +1,14 @@
+---
+description: Docker and infrastructure conventions
+globs: "{Dockerfile,docker-compose.yml,.devcontainer/**}"
+alwaysApply: false
+---
+
+# Docker Conventions
+
+- Local development uses `docker-compose.yml` at project root.
+- Each app has its own `Dockerfile` in `apps/{name}/Dockerfile`.
+- Use multi-stage builds: `deps` → `build` → `runtime` stages.
+- Base image: `node:20-alpine`.
+- Postgres version: 16-alpine.
+- Environment variables are defined in `docker-compose.yml` for dev; use `.env` files for overrides (never commit `.env`).

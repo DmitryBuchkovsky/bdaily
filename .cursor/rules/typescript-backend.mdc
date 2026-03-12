@@ -1,0 +1,30 @@
+---
+description: Backend TypeScript conventions for the Fastify API
+globs: apps/api/**/*.ts
+alwaysApply: false
+---
+
+# API Conventions
+
+- Use Fastify route handlers with typed request/reply via `@bdaily/shared` schemas.
+- Validate all inputs with Zod schemas defined in `packages/shared`.
+- Services are classes injected into routes — never put business logic directly in route handlers.
+- Error handling: throw `AppError` subclasses (NotFoundError, UnauthorizedError, ValidationError) which the global error handler maps to HTTP status codes.
+
+## File Organization
+
+- `src/routes/` — route definitions (thin, delegate to services)
+- `src/services/` — business logic classes
+- `src/services/ticket-system/` — strategy interface + implementations
+- `src/middleware/` — auth, error handling, logging
+- `src/db/` — Prisma client and schema
+
+## Examples
+
+```typescript
+// Route handler — thin, delegates to service
+app.get('/daily/:date', { preHandler: [authenticate] }, async (req, reply) => {
+  const report = await dailyService.getByDate(req.user.id, req.params.date);
+  return reply.send({ data: report });
+});
+```

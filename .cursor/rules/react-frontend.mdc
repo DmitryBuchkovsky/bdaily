@@ -1,0 +1,26 @@
+---
+description: Frontend React conventions for the web app
+globs: apps/web/**/*.{ts,tsx}
+alwaysApply: false
+---
+
+# Frontend Conventions
+
+- Use functional components with TypeScript.
+- State management: TanStack Query for server state, React state/context for UI state.
+- Styling: Tailwind CSS utility classes + shadcn/ui components. No CSS modules or styled-components.
+- Forms: React Hook Form + Zod resolvers using schemas from `@bdaily/shared`.
+
+## File Organization
+
+- `src/components/` — reusable UI components
+- `src/components/ui/` — shadcn/ui primitives
+- `src/pages/` — route-level page components
+- `src/hooks/` — custom hooks (data fetching, business logic)
+- `src/lib/` — utilities, API client, constants
+
+## Patterns
+
+- Co-locate component-specific hooks and types with the component.
+- Prefer composition over prop drilling — use context sparingly.
+- All API calls go through the typed API client in `src/lib/api.ts`, never raw `fetch`.

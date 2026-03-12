@@ -1,0 +1,14 @@
+---
+description: Prisma schema and database conventions
+globs: apps/api/prisma/**
+alwaysApply: false
+---
+
+# Database Conventions
+
+- All models use `id` as UUID primary key with `@default(uuid())`.
+- Timestamps: include `createdAt` and `updatedAt` on every model.
+- Relations: always define both sides of a relation explicitly.
+- Enums: define in Prisma schema, export corresponding Zod enums in `packages/shared`.
+- Migrations: always use `prisma migrate dev` to create named migrations, never `db push` in production.
+- Sensitive fields (tokens, passwords): mark with `/// @encrypted` comment for documentation.

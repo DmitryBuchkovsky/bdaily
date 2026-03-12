@@ -1,0 +1,28 @@
+---
+description: BDaily project overview and architecture context
+alwaysApply: true
+---
+
+# BDaily Project
+
+Monorepo daily standup report app with YouTrack integration.
+
+## Structure
+
+- `apps/api` - Fastify REST API (TypeScript, Prisma, PostgreSQL)
+- `apps/web` - React SPA (Vite, TypeScript, Tailwind, shadcn/ui)
+- `packages/shared` - Shared types, validation schemas (Zod)
+
+## Key Patterns
+
+- **Ticket system integration** uses the Strategy pattern (`TicketSystemStrategy` interface) — YouTrack is the first implementation, designed to support Jira/Linear later.
+- **Summaries** aggregate DailyReport data + live ticket system data for per-person and per-sprint views.
+- **Auth** is JWT-based (access + refresh tokens).
+- All API responses follow `{ data, error, meta }` envelope format.
+- Database access goes through Prisma ORM; never write raw SQL unless Prisma can't express the query.
+
+## Conventions
+
+- Use `pnpm` as package manager.
+- Run services via `docker compose up` for local dev.
+- Refer to `PLAN.md` for full architecture and implementation phases.

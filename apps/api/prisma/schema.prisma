@@ -1,0 +1,189 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum Role {
+  ADMIN
+  MEMBER
+}
+
+enum TicketSystemType {
+  YOUTRACK
+  JIRA
+  LINEAR
+}
+
+enum CompletedItemType {
+  TASK
+  BUG_FIX
+}
+
+enum CompletedItemStatus {
+  COMPLETED
+  MERGED
+  DEPLOYED
+}
+
+enum Priority {
+  PRIMARY
+  SECONDARY
+}
+
+enum BlockerType {
+  TECHNICAL
+  DEPENDENCY
+}
+
+enum QuestionType {
+  TECHNICAL
+  PRODUCT
+  PROCESS
+}
+
+enum TestResult {
+  APPROVED
+  REJECTED
+}
+
+model User {
+  id                String   @id @default(uuid()) @db.Uuid
+  email             String   @unique
+  name              String
+  passwordHash      String
+  avatarUrl         String?
+  role              Role     @default(MEMBER)
+  ticketSystemToken String?
+  teamId            String   @db.Uuid
+  team              Team     @relation(fields: [teamId], references: [id])
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+
+  dailyReports DailyReport[]
+
+  @@map("users")
+}
+
+model Team {
+  id                 String           @id @default(uuid()) @db.Uuid
+  name               String
+  ticketSystemType   TicketSystemType
+  ticketSystemConfig Json
+  createdAt          DateTime         @default(now())
+  updatedAt          DateTime         @updatedAt
+
+  users User[]
+
+  @@map("teams")
+}
+
+model DailyReport {
+  id        String   @id @default(uuid()) @db.Uuid
+  userId    String   @db.Uuid
+  user      User     @relation(fields: [userId], references: [id])
+  date      DateTime @db.Date
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  completedItems  CompletedItem[]
+  todayItems      TodayItem[]
+  blockers        Blocker[]
+  additionalNotes AdditionalNotes?
+  questions       Question[]
+  testedTickets   TestedTicket[]
+
+  @@unique([userId, date])
+  @@map("daily_reports")
+}
+
+model CompletedItem {
+  id            String              @id @default(uuid()) @db.Uuid
+  dailyReportId String              @db.Uuid
+  dailyReport   DailyReport         @relation(fields: [dailyReportId], references: [id], onDelete: Cascade)
+  type          CompletedItemType
+  ticketId      String?
+  title         String
+  details       String              @db.Text
+  status        CompletedItemStatus
+  prLink        String?
+  commitHash    String?
+  rootCause     String?             @db.Text
+  solution      String?             @db.Text
+  impact        String?             @db.Text
+  createdAt     DateTime            @default(now())
+  updatedAt     DateTime            @updatedAt
+
+  @@map("completed_items")
+}
+
+model TodayItem {
+  id            String      @id @default(uuid()) @db.Uuid
+  dailyReportId String      @db.Uuid
+  dailyReport   DailyReport @relation(fields: [dailyReportId], references: [id], onDelete: Cascade)
+  priority      Priority
+  ticketId      String?
+  title         String
+  goal          String?     @db.Text
+  approach      String?     @db.Text
+  etaToDev      DateTime?
+  createdAt     DateTime    @default(now())
+  updatedAt     DateTime    @updatedAt
+
+  @@map("today_items")
+}
+
+model Blocker {
+  id                 String      @id @default(uuid()) @db.Uuid
+  dailyReportId      String      @db.Uuid
+  dailyReport        DailyReport @relation(fields: [dailyReportId], references: [id], onDelete: Cascade)
+  type               BlockerType
+  description        String      @db.Text
+  impact             String?     @db.Text
+  need               String?     @db.Text
+  waitingFor         String?
+  expectedResolution String?
+  resolvedAt         DateTime?
+  createdAt          DateTime    @default(now())
+  updatedAt          DateTime    @updatedAt
+
+  @@map("blockers")
+}
+
+model AdditionalNotes {
+  id                 String      @id @default(uuid()) @db.Uuid
+  dailyReportId      String      @unique @db.Uuid
+  dailyReport        DailyReport @relation(fields: [dailyReportId], references: [id], onDelete: Cascade)
+  codeReviewRequests String?     @db.Text
+  testingStatus      String?     @db.Text
+  deploymentNotes    String?     @db.Text
+  learningResearch   String?     @db.Text
+
+  @@map("additional_notes")
+}
+
+model Question {
+  id            String       @id @default(uuid()) @db.Uuid
+  dailyReportId String       @db.Uuid
+  dailyReport   DailyReport  @relation(fields: [dailyReportId], references: [id], onDelete: Cascade)
+  type          QuestionType
+  content       String       @db.Text
+
+  @@map("questions")
+}
+
+model TestedTicket {
+  id            String      @id @default(uuid()) @db.Uuid
+  dailyReportId String      @db.Uuid
+  dailyReport   DailyReport @relation(fields: [dailyReportId], references: [id], onDelete: Cascade)
+  ticketId      String
+  title         String
+  result        TestResult
+  createdAt     DateTime    @default(now())
+  updatedAt     DateTime    @updatedAt
+
+  @@map("tested_tickets")
+}
