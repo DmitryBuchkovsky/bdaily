@@ -12,3 +12,9 @@ alwaysApply: false
 - Enums: define in Prisma schema, export corresponding Zod enums in `packages/shared`.
 - Migrations: always use `prisma migrate dev` to create named migrations, never `db push` in production.
 - Sensitive fields (tokens, passwords): mark with `/// @encrypted` comment for documentation.
+
+## SOLID Alignment
+
+- Database access should go through a repository or service layer — routes never call Prisma directly.
+- Each Prisma query should live in a service method with a descriptive name, not inline in route handlers.
+- Use Prisma's generated types — never manually duplicate model shapes.

@@ -48,6 +48,13 @@ export interface TestedTicket {
   result: "APPROVED" | "REJECTED";
 }
 
+export interface Notes {
+  codeReviewRequests?: string;
+  testingStatus?: string;
+  deploymentNotes?: string;
+  learningResearch?: string;
+}
+
 export interface DailyReport {
   id: string;
   userId: string;
@@ -57,12 +64,7 @@ export interface DailyReport {
   blockers: Blocker[];
   questions: Question[];
   testedTickets: TestedTicket[];
-  notes?: {
-    codeReviewRequests?: string;
-    testingStatus?: string;
-    deploymentNotes?: string;
-    learningResearch?: string;
-  };
+  notes?: Notes;
   createdAt: string;
   updatedAt: string;
 }
@@ -74,54 +76,54 @@ export interface DailyReportInput {
   blockers: Blocker[];
   questions: Question[];
   testedTickets: TestedTicket[];
-  notes?: {
-    codeReviewRequests?: string;
-    testingStatus?: string;
-    deploymentNotes?: string;
-    learningResearch?: string;
-  };
+  notes?: Notes;
+}
+
+interface DailyHistoryResponse {
+  reports: DailyReport[];
+  total: number;
+  page: number;
+  limit: number;
 }
 
 export function useDailyReport(date: string | undefined) {
   return useQuery({
     queryKey: ["daily-report", date],
-    queryFn: () => api.get<DailyReport>(`/daily-reports/${date}`),
+    queryFn: () => api.get<DailyReport>(`/daily/${date}`),
     enabled: !!date,
   });
 }
 
-export function useDailyReportHistory() {
+export function useDailyReportHistory(page = 1, limit = 10) {
   return useQuery({
-    queryKey: ["daily-reports"],
-    queryFn: () => api.get<DailyReport[]>("/daily-reports"),
+    queryKey: ["daily-reports", page, limit],
+    queryFn: () =>
+      api.get<DailyHistoryResponse>(
+        `/daily/history?page=${page}&limit=${limit}`,
+      ),
   });
 }
 
 export function useCreateDailyReport() {
-  const queryClient = useQueryClient();
-
+  const qc = useQueryClient();
   return useMutation({
     mutationFn: (input: DailyReportInput) =>
-      api.post<DailyReport>("/daily-reports", input),
+      api.post<DailyReport>("/daily", input),
     onSuccess: (data) => {
-      queryClient.setQueryData(["daily-report", data.date], data);
-      queryClient.invalidateQueries({ queryKey: ["daily-reports"] });
+      qc.setQueryData(["daily-report", data.date], data);
+      qc.invalidateQueries({ queryKey: ["daily-reports"] });
     },
   });
 }
 
 export function useUpdateDailyReport() {
-  const queryClient = useQueryClient();
-
+  const qc = useQueryClient();
   return useMutation({
-    mutationFn: ({
-      id,
-      ...input
-    }: DailyReportInput & { id: string }) =>
-      api.put<DailyReport>(`/daily-reports/${id}`, input),
+    mutationFn: ({ id, ...input }: DailyReportInput & { id: string }) =>
+      api.put<DailyReport>(`/daily/${id}`, input),
     onSuccess: (data) => {
-      queryClient.setQueryData(["daily-report", data.date], data);
-      queryClient.invalidateQueries({ queryKey: ["daily-reports"] });
+      qc.setQueryData(["daily-report", data.date], data);
+      qc.invalidateQueries({ queryKey: ["daily-reports"] });
     },
   });
 }

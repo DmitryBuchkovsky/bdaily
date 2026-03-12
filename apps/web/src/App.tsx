@@ -23,10 +23,7 @@ export function App() {
         <Route path="/daily" element={<DailyFormPage />} />
         <Route path="/daily/:date" element={<DailyFormPage />} />
         <Route path="/summary/me" element={<PersonSummaryPage />} />
-        <Route
-          path="/summary/sprint/:sprintId"
-          element={<SprintSummaryPage />}
-        />
+        <Route path="/summary/sprint/:sprintId" element={<SprintSummaryPage />} />
         <Route path="/team" element={<TeamDashboardPage />} />
       </Route>
       <Route path="*" element={<Navigate to="/" replace />} />

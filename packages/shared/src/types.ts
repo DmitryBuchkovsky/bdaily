@@ -28,6 +28,7 @@ import {
 import {
   personSummarySchema,
   sprintSummarySchema,
+  teamSummarySchema,
 } from "./schemas/summary.js";
 
 // Auth types
@@ -55,3 +56,4 @@ export type BurndownPoint = z.infer<typeof burndownPointSchema>;
 // Summary types
 export type PersonSummary = z.infer<typeof personSummarySchema>;
 export type SprintSummary = z.infer<typeof sprintSummarySchema>;
+export type TeamSummary = z.infer<typeof teamSummarySchema>;

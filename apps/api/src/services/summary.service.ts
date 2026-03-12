@@ -1,51 +1,100 @@
-import { prisma } from "../lib/prisma.js";
+import type {
+  DailyReportRepository,
+  DailyReportFull,
+} from "../repositories/daily.repository.js";
+import type { UserRepository } from "../repositories/user.repository.js";
+import type {
+  TicketSystemStrategy,
+  TicketSystemConfig,
+  SprintInfo,
+  BurndownPoint,
+} from "./ticket-system/strategy.js";
 import {
   NotFoundError,
   ForbiddenError,
 } from "../middleware/error-handler.js";
-import { createTicketStrategy } from "./ticket-system/factory.js";
-import type { TicketSystemConfig } from "./ticket-system/strategy.js";
+
+type TicketStrategyFactory = (type: string) => TicketSystemStrategy;
+
+interface PersonSummaryResult {
+  user: { id: string; name: string; email: string };
+  period: { from?: Date; to?: Date };
+  stats: {
+    totalReports: number;
+    totalCompleted: number;
+    totalBugsFixed: number;
+    totalTasksDone: number;
+    totalBlockers: number;
+    unresolvedBlockers: number;
+    totalTested: number;
+  };
+  recentCompleted: DailyReportFull["completedItems"];
+  activeBlockers: DailyReportFull["blockers"];
+  upcomingWork: DailyReportFull["todayItems"];
+}
+
+interface SprintSummaryResult {
+  sprint: SprintInfo | null;
+  burndown: BurndownPoint[];
+  team: { id: string; name: string; email: string }[];
+  stats: {
+    totalReports: number;
+    totalCompleted: number;
+    activeBlockers: number;
+  };
+  reportsByUser: Array<{
+    user: { id: string; name: string; email: string };
+    reports: DailyReportFull[];
+  }>;
+}
+
+interface TeamSummaryResult {
+  team: { id: string; memberCount: number };
+  period: { from?: Date; to?: Date };
+  stats: {
+    totalReports: number;
+    totalCompleted: number;
+    totalBugsFixed: number;
+    totalTasksDone: number;
+    activeBlockers: number;
+  };
+  members: Array<{
+    user: { id: string; name: string; email: string };
+    reportCount: number;
+    completedCount: number;
+    blockerCount: number;
+  }>;
+}
 
 export class SummaryService {
+  constructor(
+    private readonly userRepo: UserRepository,
+    private readonly dailyRepo: DailyReportRepository,
+    private readonly ticketStrategyFactory: TicketStrategyFactory,
+  ) {}
+
   async getPersonSummary(
     userId: string,
     requesterId: string,
     from?: Date,
     to?: Date,
-  ) {
-    const user = await prisma.user.findUnique({
-      where: { id: userId },
-      include: { team: true },
-    });
-
+  ): Promise<PersonSummaryResult> {
+    const user = await this.userRepo.findById(userId);
     if (!user) throw new NotFoundError("User not found");
 
-    const requester = await prisma.user.findUnique({
-      where: { id: requesterId },
-    });
-
-    if (!requester || (requester.teamId !== user.teamId && requester.role !== "ADMIN")) {
+    const requester = await this.userRepo.findById(requesterId);
+    if (
+      !requester ||
+      (requester.teamId !== user.teamId && requester.role !== "ADMIN")
+    ) {
       throw new ForbiddenError("You can only view summaries for your team");
     }
 
-    const dateFilter = {
-      ...(from ? { gte: from } : {}),
-      ...(to ? { lte: to } : {}),
-    };
-
-    const reports = await prisma.dailyReport.findMany({
-      where: {
-        userId,
-        ...(from || to ? { date: dateFilter } : {}),
-      },
-      include: {
-        completedItems: true,
-        todayItems: true,
-        blockers: true,
-        testedTickets: true,
-      },
-      orderBy: { date: "desc" },
-    });
+    const reports = await this.dailyRepo.findByUserInPeriod(
+      userId,
+      from ?? new Date(0),
+      to ?? new Date(),
+    );
 
     const completedItems = reports.flatMap((r) => r.completedItems);
     const blockers = reports.flatMap((r) => r.blockers);
@@ -58,7 +107,8 @@ export class SummaryService {
       stats: {
         totalReports: reports.length,
         totalCompleted: completedItems.length,
-        totalBugsFixed: completedItems.filter((i) => i.type === "BUG_FIX").length,
+        totalBugsFixed: completedItems.filter((i) => i.type === "BUG_FIX")
+          .length,
         totalTasksDone: completedItems.filter((i) => i.type === "TASK").length,
         totalBlockers: blockers.length,
         unresolvedBlockers: blockers.filter((b) => !b.resolvedAt).length,
@@ -70,15 +120,16 @@ export class SummaryService {
     };
   }
 
-  async getSprintSummary(sprintId: string, requesterId: string) {
-    const requester = await prisma.user.findUnique({
-      where: { id: requesterId },
-      include: { team: true },
-    });
-
+  async getSprintSummary(
+    sprintId: string,
+    requesterId: string,
+  ): Promise<SprintSummaryResult> {
+    const requester = await this.userRepo.findByIdWithTeam(requesterId);
     if (!requester) throw new NotFoundError("User not found");
 
-    const strategy = createTicketStrategy(requester.team.ticketSystemType);
+    const strategy = this.ticketStrategyFactory(
+      requester.team.ticketSystemType,
+    );
 
     if (requester.ticketSystemToken) {
       const config: TicketSystemConfig = {
@@ -96,29 +147,25 @@ export class SummaryService {
       strategy.getBurndownData(sprintId),
     ]);
 
-    const teamMembers = await prisma.user.findMany({
-      where: { teamId: requester.teamId },
-      select: { id: true, name: true, email: true },
-    });
+    const teamMembers = await this.userRepo.findByTeamId(requester.teamId);
+    const memberInfos = teamMembers.map((m) => ({
+      id: m.id,
+      name: m.name,
+      email: m.email,
+    }));
 
     const reports = sprintInfo
-      ? await prisma.dailyReport.findMany({
-          where: {
-            userId: { in: teamMembers.map((m) => m.id) },
-            date: { gte: sprintInfo.startDate, lte: sprintInfo.endDate },
-          },
-          include: {
-            completedItems: true,
-            blockers: true,
-            user: { select: { id: true, name: true } },
-          },
-        })
+      ? await this.dailyRepo.findByTeamInPeriod(
+          requester.teamId,
+          sprintInfo.startDate,
+          sprintInfo.endDate,
+        )
       : [];
 
     return {
       sprint: sprintInfo,
       burndown,
-      team: teamMembers,
+      team: memberInfos,
       stats: {
         totalReports: reports.length,
         totalCompleted: reports.reduce(
@@ -129,7 +176,7 @@ export class SummaryService {
           .flatMap((r) => r.blockers)
           .filter((b) => !b.resolvedAt).length,
       },
-      reportsByUser: teamMembers.map((member) => ({
+      reportsByUser: memberInfos.map((member) => ({
         user: member,
         reports: reports.filter((r) => r.userId === member.id),
       })),
@@ -141,40 +188,26 @@ export class SummaryService {
     requesterId: string,
     from?: Date,
     to?: Date,
-  ) {
-    const requester = await prisma.user.findUnique({
-      where: { id: requesterId },
-    });
-
+  ): Promise<TeamSummaryResult> {
+    const requester = await this.userRepo.findById(requesterId);
     if (!requester) throw new NotFoundError("User not found");
 
     if (requester.teamId !== teamId && requester.role !== "ADMIN") {
       throw new ForbiddenError("You can only view summaries for your team");
     }
 
-    const dateFilter = {
-      ...(from ? { gte: from } : {}),
-      ...(to ? { lte: to } : {}),
-    };
+    const members = await this.userRepo.findByTeamId(teamId);
+    const memberInfos = members.map((m) => ({
+      id: m.id,
+      name: m.name,
+      email: m.email,
+    }));
 
-    const members = await prisma.user.findMany({
-      where: { teamId },
-      select: { id: true, name: true, email: true },
-    });
-
-    const reports = await prisma.dailyReport.findMany({
-      where: {
-        userId: { in: members.map((m) => m.id) },
-        ...(from || to ? { date: dateFilter } : {}),
-      },
-      include: {
-        completedItems: true,
-        blockers: true,
-        todayItems: true,
-        user: { select: { id: true, name: true } },
-      },
-      orderBy: { date: "desc" },
-    });
+    const reports = await this.dailyRepo.findByTeamInPeriod(
+      teamId,
+      from ?? new Date(0),
+      to ?? new Date(),
+    );
 
     const allCompleted = reports.flatMap((r) => r.completedItems);
     const allBlockers = reports.flatMap((r) => r.blockers);
@@ -185,11 +218,12 @@ export class SummaryService {
       stats: {
         totalReports: reports.length,
         totalCompleted: allCompleted.length,
-        totalBugsFixed: allCompleted.filter((i) => i.type === "BUG_FIX").length,
+        totalBugsFixed: allCompleted.filter((i) => i.type === "BUG_FIX")
+          .length,
         totalTasksDone: allCompleted.filter((i) => i.type === "TASK").length,
         activeBlockers: allBlockers.filter((b) => !b.resolvedAt).length,
       },
-      members: members.map((member) => {
+      members: memberInfos.map((member) => {
         const memberReports = reports.filter((r) => r.userId === member.id);
         return {
           user: member,
@@ -199,7 +233,8 @@ export class SummaryService {
             0,
           ),
           blockerCount: memberReports.reduce(
-            (sum, r) => sum + r.blockers.filter((b) => !b.resolvedAt).length,
+            (sum, r) =>
+              sum + r.blockers.filter((b) => !b.resolvedAt).length,
             0,
           ),
         };

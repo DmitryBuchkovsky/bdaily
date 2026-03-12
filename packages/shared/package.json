@@ -16,12 +16,16 @@
     "dev": "tsc --watch",
     "lint": "tsc --noEmit",
     "type-check": "tsc --noEmit",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "test:ci": "vitest run --coverage",
     "clean": "rm -rf dist .turbo"
   },
   "dependencies": {
     "zod": "^3"
   },
   "devDependencies": {
-    "typescript": "^5"
+    "typescript": "^5",
+    "vitest": "^4.1.0"
   }
 }

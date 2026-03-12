@@ -1,0 +1,35 @@
+---
+description: Strategy pattern conventions for pluggable integrations
+globs: apps/api/src/services/**/*.ts
+alwaysApply: false
+---
+
+# Strategy Pattern
+
+All pluggable behavior uses the Strategy pattern: define an interface, implement it per vendor, select via factory.
+
+## Structure
+
+```
+services/
+  ticket-system/
+    strategy.ts       ← interface + shared types
+    youtrack.ts       ← YouTrack implementation
+    jira.ts           ← future: Jira implementation
+    factory.ts        ← creates the right strategy from config
+```
+
+## Rules
+
+- The interface is the contract. Every implementation must satisfy it fully — no optional methods, no partial implementations.
+- Consumers depend only on the interface, never on a concrete implementation.
+- The factory is the only place that knows about concrete classes.
+- New integrations = new file implementing the interface + one line in the factory. Never modify existing implementations.
+- Each strategy method should be stateless where possible — receive what it needs via parameters.
+
+## Adding a New Strategy
+
+1. Create `apps/api/src/services/ticket-system/{name}.ts` implementing `TicketSystemStrategy`.
+2. Add the new type to the `TicketSystemType` enum in `packages/shared/src/enums.ts` and Prisma schema.
+3. Add one case to the factory switch in `factory.ts`.
+4. Done — no other files change.

@@ -1,10 +1,11 @@
 import type { FastifyError, FastifyReply, FastifyRequest } from "fastify";
+import { ZodError } from "zod";
 
 export class AppError extends Error {
   constructor(
     message: string,
-    public statusCode: number = 500,
-    public code: string = "INTERNAL_ERROR",
+    public readonly statusCode: number = 500,
+    public readonly code: string = "INTERNAL_ERROR",
   ) {
     super(message);
     this.name = this.constructor.name;
@@ -32,7 +33,7 @@ export class ForbiddenError extends AppError {
 export class ValidationError extends AppError {
   constructor(
     message = "Validation failed",
-    public details?: unknown,
+    public readonly details?: unknown[],
   ) {
     super(message, 400, "VALIDATION_ERROR");
   }
@@ -44,13 +45,25 @@ export class ConflictError extends AppError {
   }
 }
 
-export function errorHandler(
-  error: FastifyError | AppError,
-  _request: FastifyRequest,
+interface ApiErrorEnvelope {
+  data: null;
+  error: { code: string; message: string; details?: unknown[] };
+  meta: null;
+}
+
+export type ErrorHandler = (
+  error: FastifyError,
+  request: FastifyRequest,
   reply: FastifyReply,
-) {
+) => FastifyReply;
+
+export const errorHandler: ErrorHandler = (
+  error,
+  _request,
+  reply,
+): FastifyReply => {
   if (error instanceof AppError) {
-    return reply.status(error.statusCode).send({
+    const body: ApiErrorEnvelope = {
       data: null,
       error: {
         code: error.code,
@@ -60,11 +73,25 @@ export function errorHandler(
           : {}),
       },
       meta: null,
-    });
+    };
+    return reply.status(error.statusCode).send(body);
+  }
+
+  if (error instanceof ZodError) {
+    const body: ApiErrorEnvelope = {
+      data: null,
+      error: {
+        code: "VALIDATION_ERROR",
+        message: "Validation failed",
+        details: error.issues,
+      },
+      meta: null,
+    };
+    return reply.status(400).send(body);
   }
 
   if (error.validation) {
-    return reply.status(400).send({
+    const body: ApiErrorEnvelope = {
       data: null,
       error: {
         code: "VALIDATION_ERROR",
@@ -72,11 +99,12 @@ export function errorHandler(
         details: error.validation,
       },
       meta: null,
-    });
+    };
+    return reply.status(400).send(body);
   }
 
   const statusCode = error.statusCode ?? 500;
-  return reply.status(statusCode).send({
+  const body: ApiErrorEnvelope = {
     data: null,
     error: {
       code: "INTERNAL_ERROR",
@@ -86,5 +114,6 @@ export function errorHandler(
           : error.message,
     },
     meta: null,
-  });
-}
+  };
+  return reply.status(statusCode).send(body);
+};

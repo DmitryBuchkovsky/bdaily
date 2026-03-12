@@ -1,0 +1,31 @@
+---
+description: Testing conventions with Vitest
+globs: "**/*.test.{ts,tsx}"
+alwaysApply: false
+---
+
+# Testing Conventions
+
+- Test runner: Vitest with globals enabled.
+- Tests live in `__tests__/` directories co-located with the code they test.
+- Name tests `{module}.test.ts` or `{Component}.test.tsx`.
+
+## Rules
+
+- Test behavior, not implementation details.
+- Each test should be independent — no shared mutable state between tests.
+- Use `describe` blocks to group related tests; `it` for individual cases.
+- Mock external dependencies (Prisma, fetch, APIs) — never hit real services in unit tests.
+- Cast mocks through `unknown` to satisfy TypeScript: `mock as unknown as RealType`.
+- Use factory functions (`createMockUser()`) instead of inline test data.
+
+## API Tests
+
+- Test services and error handling, not route wiring.
+- Mock Prisma client and strategy interfaces.
+
+## Web Tests
+
+- Use `@testing-library/react` — query by role/text, not implementation.
+- Wrap components in required providers (QueryClient, Router, ThemeProvider).
+- Test user interactions and visible output, not internal state.

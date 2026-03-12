@@ -6,25 +6,49 @@ alwaysApply: false
 
 # API Conventions
 
-- Use Fastify route handlers with typed request/reply via `@bdaily/shared` schemas.
-- Validate all inputs with Zod schemas defined in `packages/shared`.
-- Services are classes injected into routes — never put business logic directly in route handlers.
-- Error handling: throw `AppError` subclasses (NotFoundError, UnauthorizedError, ValidationError) which the global error handler maps to HTTP status codes.
+## SOLID in Practice
+
+- **Routes** are thin — they parse input, call a service, return a response. No business logic.
+- **Services** contain business logic. Each service has a single responsibility (e.g., `DailyReportService`, `SummaryService`).
+- **Services depend on interfaces**, not concrete classes. Inject `TicketSystemStrategy`, not `YouTrackStrategy`.
+- **Strategies** implement interfaces for pluggable behavior (ticket systems, export formats).
+- **Factories** create strategy instances from config. Use `TicketSystemFactory.create(type, config)`.
+
+## TypeScript Rules
+
+- Always type function parameters and return values explicitly.
+- Never use `any`. Use `unknown` + type guards for dynamic data.
+- Use `satisfies` operator for config objects to get both inference and validation.
+- Prefer readonly properties and `Readonly<T>` for data that shouldn't mutate.
+
+## Validation
+
+- Validate all inputs at route boundaries with Zod schemas from `@bdaily/shared`.
+- Services trust their inputs are already validated — they work with typed data.
+- Error handling: throw `AppError` subclasses which the global error handler maps to HTTP status codes.
 
 ## File Organization
 
 - `src/routes/` — route definitions (thin, delegate to services)
-- `src/services/` — business logic classes
+- `src/services/` — business logic, one file per service
 - `src/services/ticket-system/` — strategy interface + implementations
 - `src/middleware/` — auth, error handling, logging
-- `src/db/` — Prisma client and schema
+- `src/lib/` — Prisma client, utilities
 
-## Examples
+## Example
 
 ```typescript
-// Route handler — thin, delegates to service
+// Route — thin, delegates to service
 app.get('/daily/:date', { preHandler: [authenticate] }, async (req, reply) => {
   const report = await dailyService.getByDate(req.user.id, req.params.date);
   return reply.send({ data: report });
 });
+
+// Service — depends on abstraction, not concrete
+class DailyReportService {
+  constructor(
+    private readonly db: PrismaClient,
+    private readonly ticketSystem: TicketSystemStrategy,
+  ) {}
+}
 ```

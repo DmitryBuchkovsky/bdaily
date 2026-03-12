@@ -37,6 +37,7 @@ export {
 export {
   personSummarySchema,
   sprintSummarySchema,
+  teamSummarySchema,
 } from "./schemas/summary.js";
 
 export type {
@@ -58,4 +59,5 @@ export type {
   BurndownPoint,
   PersonSummary,
   SprintSummary,
+  TeamSummary,
 } from "./types.js";

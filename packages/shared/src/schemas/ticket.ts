@@ -1,43 +1,42 @@
 import { z } from "zod";
 
-export const ticketSchema = z.object({
-  id: z.string().min(1),
-  key: z.string().min(1),
-  summary: z.string(),
-  status: z.string(),
-  assignee: z.string().optional(),
-  type: z.string().optional(),
-  priority: z.string().optional(),
-  sprintName: z.string().optional(),
-  url: z.string().url().optional(),
-});
+export const ticketSchema = z
+  .object({
+    id: z.string(),
+    summary: z.string(),
+    state: z.string(),
+    type: z.string(),
+    priority: z.string(),
+    assignee: z.string(),
+    sprintName: z.string().optional(),
+    estimatedTime: z.string().optional(),
+    etaToDev: z.string().optional(),
+  })
+  .strict();
 
-export const ticketDetailsSchema = ticketSchema.extend({
-  description: z.string().optional(),
-  created: z.coerce.date(),
-  updated: z.coerce.date(),
-  resolved: z.coerce.date().optional(),
-  estimatedHours: z.number().nonnegative().optional(),
-  spentHours: z.number().nonnegative().optional(),
-  tags: z.array(z.string()).default([]),
-  subtasks: z.array(ticketSchema).default([]),
-});
+export const ticketDetailsSchema = ticketSchema
+  .extend({
+    description: z.string(),
+    subtasks: z.array(ticketSchema).default([]),
+    linkedTickets: z.array(ticketSchema).default([]),
+    customFields: z.record(z.string(), z.unknown()),
+  })
+  .strict();
 
-export const sprintInfoSchema = z.object({
-  id: z.string().min(1),
-  name: z.string().min(1),
-  goal: z.string().optional(),
-  startDate: z.coerce.date(),
-  endDate: z.coerce.date(),
-  isActive: z.boolean(),
-  totalStories: z.number().int().nonnegative(),
-  completedStories: z.number().int().nonnegative(),
-  totalBugs: z.number().int().nonnegative(),
-  fixedBugs: z.number().int().nonnegative(),
-});
+export const sprintInfoSchema = z
+  .object({
+    id: z.string(),
+    name: z.string(),
+    startDate: z.string(),
+    endDate: z.string(),
+    goal: z.string().optional(),
+  })
+  .strict();
 
-export const burndownPointSchema = z.object({
-  date: z.coerce.date(),
-  idealRemaining: z.number().nonnegative(),
-  actualRemaining: z.number().nonnegative(),
-});
+export const burndownPointSchema = z
+  .object({
+    date: z.string(),
+    remaining: z.number(),
+    ideal: z.number(),
+  })
+  .strict();

@@ -4,9 +4,9 @@ import {
   useState,
   useCallback,
   useEffect,
+  createElement,
   type ReactNode,
 } from "react";
-import { createElement } from "react";
 import { api } from "./api";
 
 interface User {
@@ -23,16 +23,42 @@ interface AuthContextValue {
   isAuthenticated: boolean;
   isLoading: boolean;
   login: (email: string, password: string) => Promise<void>;
-  register: (email: string, password: string, name: string) => Promise<void>;
+  register: (
+    email: string,
+    password: string,
+    name: string,
+    teamId: string,
+  ) => Promise<void>;
   logout: () => void;
 }
-
-const AuthContext = createContext<AuthContextValue | null>(null);
 
 interface AuthTokens {
   accessToken: string;
   refreshToken: string;
   user: User;
+}
+
+const AuthContext = createContext<AuthContextValue | null>(null);
+
+function loadStoredUser(): User | null {
+  try {
+    const raw = localStorage.getItem("user");
+    return raw ? (JSON.parse(raw) as User) : null;
+  } catch {
+    return null;
+  }
+}
+
+function storeAuth(tokens: AuthTokens): void {
+  localStorage.setItem("access_token", tokens.accessToken);
+  localStorage.setItem("refresh_token", tokens.refreshToken);
+  localStorage.setItem("user", JSON.stringify(tokens.user));
+}
+
+function clearAuth(): void {
+  localStorage.removeItem("access_token");
+  localStorage.removeItem("refresh_token");
+  localStorage.removeItem("user");
 }
 
 export function AuthProvider({ children }: { children: ReactNode }) {
@@ -41,19 +67,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   useEffect(() => {
     const token = localStorage.getItem("access_token");
-    if (!token) {
-      setIsLoading(false);
-      return;
+    const stored = loadStoredUser();
+    if (token && stored) {
+      setUser(stored);
+    } else if (!token) {
+      clearAuth();
     }
-
-    api
-      .get<User>("/auth/me")
-      .then(setUser)
-      .catch(() => {
-        localStorage.removeItem("access_token");
-        localStorage.removeItem("refresh_token");
-      })
-      .finally(() => setIsLoading(false));
+    setIsLoading(false);
   }, []);
 
   const login = useCallback(async (email: string, password: string) => {
@@ -61,28 +81,26 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       email,
       password,
     });
-    localStorage.setItem("access_token", result.accessToken);
-    localStorage.setItem("refresh_token", result.refreshToken);
+    storeAuth(result);
     setUser(result.user);
   }, []);
 
   const register = useCallback(
-    async (email: string, password: string, name: string) => {
+    async (email: string, password: string, name: string, teamId: string) => {
       const result = await api.post<AuthTokens>("/auth/register", {
         email,
         password,
         name,
+        teamId,
       });
-      localStorage.setItem("access_token", result.accessToken);
-      localStorage.setItem("refresh_token", result.refreshToken);
+      storeAuth(result);
       setUser(result.user);
     },
     [],
   );
 
   const logout = useCallback(() => {
-    localStorage.removeItem("access_token");
-    localStorage.removeItem("refresh_token");
+    clearAuth();
     setUser(null);
     window.location.href = "/login";
   }, []);
@@ -90,14 +108,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   return createElement(
     AuthContext.Provider,
     {
-      value: {
-        user,
-        isAuthenticated: !!user,
-        isLoading,
-        login,
-        register,
-        logout,
-      },
+      value: { user, isAuthenticated: !!user, isLoading, login, register, logout },
     },
     children,
   );
@@ -105,8 +116,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
 export function useAuth(): AuthContextValue {
   const ctx = useContext(AuthContext);
-  if (!ctx) {
-    throw new Error("useAuth must be used within an AuthProvider");
-  }
+  if (!ctx) throw new Error("useAuth must be used within an AuthProvider");
   return ctx;
 }

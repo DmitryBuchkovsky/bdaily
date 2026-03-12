@@ -12,6 +12,9 @@
     "db:generate": "prisma generate",
     "db:migrate": "prisma migrate dev",
     "db:push": "prisma db push",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "test:ci": "vitest run --coverage",
     "clean": "rm -rf dist .turbo"
   },
   "dependencies": {
@@ -29,6 +32,7 @@
     "@types/node": "^22",
     "prisma": "^6",
     "tsx": "^4",
-    "typescript": "^5"
+    "typescript": "^5",
+    "vitest": "^4.1.0"
   }
 }

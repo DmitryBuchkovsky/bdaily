@@ -1,5 +1,5 @@
 ---
-description: BDaily project overview and architecture context
+description: BDaily project overview, SOLID principles, and architecture context
 alwaysApply: true
 ---
 
@@ -13,16 +13,31 @@ Monorepo daily standup report app with YouTrack integration.
 - `apps/web` - React SPA (Vite, TypeScript, Tailwind, shadcn/ui)
 - `packages/shared` - Shared types, validation schemas (Zod)
 
-## Key Patterns
+## SOLID Principles (enforce everywhere)
 
-- **Ticket system integration** uses the Strategy pattern (`TicketSystemStrategy` interface) — YouTrack is the first implementation, designed to support Jira/Linear later.
-- **Summaries** aggregate DailyReport data + live ticket system data for per-person and per-sprint views.
-- **Auth** is JWT-based (access + refresh tokens).
-- All API responses follow `{ data, error, meta }` envelope format.
-- Database access goes through Prisma ORM; never write raw SQL unless Prisma can't express the query.
+- **Single Responsibility**: Each module, class, component, or function does exactly one thing. Split when a unit has more than one reason to change.
+- **Open/Closed**: Extend behavior through strategies, plugins, or composition — never modify existing working code to add new features.
+- **Liskov Substitution**: All strategy implementations must be interchangeable via their interface contract (e.g., any `TicketSystemStrategy` works the same way).
+- **Interface Segregation**: Keep interfaces small and focused. Prefer multiple specific interfaces over one large one.
+- **Dependency Inversion**: Depend on abstractions (interfaces/types), not concrete implementations. Inject dependencies; never instantiate them inside business logic.
+
+## TypeScript First
+
+- Always use TypeScript. Never use `any` — use `unknown` with type guards when the type is truly unknown.
+- Define explicit types/interfaces for all function parameters, return values, and component props.
+- Use `as` casts only in tests; production code must use type guards or generics.
+- Prefer `interface` for object shapes, `type` for unions/intersections/utility types.
+
+## Design Patterns
+
+- **Strategy Pattern** for all pluggable behavior (ticket systems, exporters, notification channels).
+- **Factory Pattern** to instantiate strategy implementations based on config.
+- **Repository Pattern** for data access — services never call Prisma directly, they go through repository abstractions.
+- **Composition** over inheritance — compose small units together, don't build deep class hierarchies.
 
 ## Conventions
 
 - Use `pnpm` as package manager.
 - Run services via `docker compose up` for local dev.
+- All API responses follow `{ data, error, meta }` envelope format.
 - Refer to `PLAN.md` for full architecture and implementation phases.

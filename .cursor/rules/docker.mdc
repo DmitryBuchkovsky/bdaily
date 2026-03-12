@@ -11,4 +11,6 @@ alwaysApply: false
 - Use multi-stage builds: `deps` → `build` → `runtime` stages.
 - Base image: `node:20-alpine`.
 - Postgres version: 16-alpine.
+- All containers have unique names prefixed with `bdaily-` (e.g., `bdaily-db`, `bdaily-api`).
+- Ports: DB on 5434, API on 8091, Web on 8090. Avoid common ports (3000, 5432) to prevent conflicts.
 - Environment variables are defined in `docker-compose.yml` for dev; use `.env` files for overrides (never commit `.env`).

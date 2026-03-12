@@ -30,7 +30,8 @@ export function useAssignedTickets() {
 export function useSearchTickets(query: string) {
   return useQuery({
     queryKey: ["tickets", "search", query],
-    queryFn: () => api.get<Ticket[]>(`/tickets/search?q=${encodeURIComponent(query)}`),
+    queryFn: () =>
+      api.get<Ticket[]>(`/tickets/search?q=${encodeURIComponent(query)}`),
     enabled: query.length >= 2,
     placeholderData: (prev) => prev,
   });
