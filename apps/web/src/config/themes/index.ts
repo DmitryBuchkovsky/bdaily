@@ -1,8 +1,8 @@
 import type { ThemeConfig, DeepPartial } from "../theme";
 
-export const hanTheme: DeepPartial<ThemeConfig> = {
+export const blueTheme: DeepPartial<ThemeConfig> = {
   company: {
-    name: "HAN",
+    name: "BDaily",
   },
   colors: {
     primary: "210 100% 40%",
@@ -14,5 +14,5 @@ export const hanTheme: DeepPartial<ThemeConfig> = {
 
 export const presets: Record<string, DeepPartial<ThemeConfig>> = {
   default: {},
-  han: hanTheme,
+  blue: blueTheme,
 };

@@ -17,6 +17,17 @@ services:
       timeout: 5s
       retries: 5
 
+  mailcatcher:
+    container_name: bdaily-mail
+    image: axllent/mailpit:latest
+    restart: unless-stopped
+    ports:
+      - "8025:8025"
+      - "1025:1025"
+    environment:
+      MP_SMTP_AUTH_ACCEPT_ANY: 1
+      MP_SMTP_AUTH_ALLOW_INSECURE: 1
+
   api:
     container_name: bdaily-api
     build:
@@ -30,6 +41,9 @@ services:
       JWT_SECRET: dev-secret-change-in-production
       PORT: 8091
       NODE_ENV: development
+      SMTP_HOST: bdaily-mail
+      SMTP_PORT: 1025
+      EMAIL_FROM: noreply@bdaily.local
     depends_on:
       db:
         condition: service_healthy
@@ -44,7 +58,7 @@ services:
       dockerfile: apps/web/Dockerfile
     restart: unless-stopped
     ports:
-      - "8090:8090"
+      - "8090:80"
     environment:
       VITE_API_URL: http://localhost:8091
     depends_on:

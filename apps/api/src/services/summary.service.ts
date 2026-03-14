@@ -1,7 +1,4 @@
-import type {
-  DailyReportRepository,
-  DailyReportFull,
-} from "../repositories/daily.repository.js";
+import type { DailyReportRepository, DailyReportFull } from "../repositories/daily.repository.js";
 import type { UserRepository } from "../repositories/user.repository.js";
 import type {
   TicketSystemStrategy,
@@ -9,10 +6,7 @@ import type {
   SprintInfo,
   BurndownPoint,
 } from "./ticket-system/strategy.js";
-import {
-  NotFoundError,
-  ForbiddenError,
-} from "../middleware/error-handler.js";
+import { NotFoundError, ForbiddenError } from "../middleware/error-handler.js";
 
 type TicketStrategyFactory = (type: string) => TicketSystemStrategy;
 
@@ -83,10 +77,7 @@ export class SummaryService {
     if (!user) throw new NotFoundError("User not found");
 
     const requester = await this.userRepo.findById(requesterId);
-    if (
-      !requester ||
-      (requester.teamId !== user.teamId && requester.role !== "ADMIN")
-    ) {
+    if (!requester || (requester.teamId !== user.teamId && requester.role !== "ADMIN")) {
       throw new ForbiddenError("You can only view summaries for your team");
     }
 
@@ -107,8 +98,7 @@ export class SummaryService {
       stats: {
         totalReports: reports.length,
         totalCompleted: completedItems.length,
-        totalBugsFixed: completedItems.filter((i) => i.type === "BUG_FIX")
-          .length,
+        totalBugsFixed: completedItems.filter((i) => i.type === "BUG_FIX").length,
         totalTasksDone: completedItems.filter((i) => i.type === "TASK").length,
         totalBlockers: blockers.length,
         unresolvedBlockers: blockers.filter((b) => !b.resolvedAt).length,
@@ -120,24 +110,21 @@ export class SummaryService {
     };
   }
 
-  async getSprintSummary(
-    sprintId: string,
-    requesterId: string,
-  ): Promise<SprintSummaryResult> {
+  async getSprintSummary(sprintId: string, requesterId: string): Promise<SprintSummaryResult> {
     const requester = await this.userRepo.findByIdWithTeam(requesterId);
     if (!requester) throw new NotFoundError("User not found");
 
-    const strategy = this.ticketStrategyFactory(
-      requester.team.ticketSystemType,
-    );
+    const strategy = this.ticketStrategyFactory(requester.team.ticketSystemType);
 
-    if (requester.ticketSystemToken) {
+    const teamConfig = requester.team.ticketSystemConfig as {
+      baseUrl: string;
+      projectIds?: string[];
+      token?: string;
+    };
+    if (teamConfig.token) {
       const config: TicketSystemConfig = {
-        ...(requester.team.ticketSystemConfig as {
-          baseUrl: string;
-          projectIds?: string[];
-        }),
-        token: requester.ticketSystemToken,
+        ...teamConfig,
+        token: teamConfig.token,
       };
       await strategy.authenticate(config);
     }
@@ -168,13 +155,8 @@ export class SummaryService {
       team: memberInfos,
       stats: {
         totalReports: reports.length,
-        totalCompleted: reports.reduce(
-          (sum, r) => sum + r.completedItems.length,
-          0,
-        ),
-        activeBlockers: reports
-          .flatMap((r) => r.blockers)
-          .filter((b) => !b.resolvedAt).length,
+        totalCompleted: reports.reduce((sum, r) => sum + r.completedItems.length, 0),
+        activeBlockers: reports.flatMap((r) => r.blockers).filter((b) => !b.resolvedAt).length,
       },
       reportsByUser: memberInfos.map((member) => ({
         user: member,
@@ -218,8 +200,7 @@ export class SummaryService {
       stats: {
         totalReports: reports.length,
         totalCompleted: allCompleted.length,
-        totalBugsFixed: allCompleted.filter((i) => i.type === "BUG_FIX")
-          .length,
+        totalBugsFixed: allCompleted.filter((i) => i.type === "BUG_FIX").length,
         totalTasksDone: allCompleted.filter((i) => i.type === "TASK").length,
         activeBlockers: allBlockers.filter((b) => !b.resolvedAt).length,
       },
@@ -228,13 +209,9 @@ export class SummaryService {
         return {
           user: member,
           reportCount: memberReports.length,
-          completedCount: memberReports.reduce(
-            (sum, r) => sum + r.completedItems.length,
-            0,
-          ),
+          completedCount: memberReports.reduce((sum, r) => sum + r.completedItems.length, 0),
           blockerCount: memberReports.reduce(
-            (sum, r) =>
-              sum + r.blockers.filter((b) => !b.resolvedAt).length,
+            (sum, r) => sum + r.blockers.filter((b) => !b.resolvedAt).length,
             0,
           ),
         };

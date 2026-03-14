@@ -23,3 +23,9 @@ export type QuestionType = z.infer<typeof QuestionType>;
 
 export const TestResult = z.enum(["APPROVED", "REJECTED"]);
 export type TestResult = z.infer<typeof TestResult>;
+
+export { NotificationType } from "./schemas/notification.js";
+export type { NotificationType as NotificationTypeT } from "./schemas/notification.js";
+
+export { ActionItemStatus } from "./schemas/action-item.js";
+export type { ActionItemStatus as ActionItemStatusT } from "./schemas/action-item.js";

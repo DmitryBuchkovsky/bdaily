@@ -1,4 +1,4 @@
-import { FormTextarea } from "@/components/ui/FormTextarea";
+import { RichTextEditor } from "@/components/ui/RichTextEditor";
 import type { Notes } from "@/hooks/useDailyReport";
 
 interface NotesSectionProps {
@@ -7,10 +7,18 @@ interface NotesSectionProps {
 }
 
 const noteFields: { key: keyof Notes; label: string; placeholder: string }[] = [
-  { key: "codeReviewRequests", label: "Code Review Requests", placeholder: "PRs that need review..." },
+  {
+    key: "codeReviewRequests",
+    label: "Code Review Requests",
+    placeholder: "PRs that need review...",
+  },
   { key: "testingStatus", label: "Testing Status", placeholder: "Testing progress..." },
   { key: "deploymentNotes", label: "Deployment Notes", placeholder: "Deployment-related notes..." },
-  { key: "learningResearch", label: "Learning / Research", placeholder: "Anything learned or researched..." },
+  {
+    key: "learningResearch",
+    label: "Learning / Research",
+    placeholder: "Anything learned or researched...",
+  },
 ];
 
 export function NotesSection({ notes, onChange }: NotesSectionProps) {
@@ -21,11 +29,11 @@ export function NotesSection({ notes, onChange }: NotesSectionProps) {
         {noteFields.map(({ key, label, placeholder }) => (
           <div key={key}>
             <label className="mb-1.5 block text-sm font-medium">{label}</label>
-            <FormTextarea
+            <RichTextEditor
               value={notes[key] ?? ""}
               onChange={(v) => onChange({ ...notes, [key]: v })}
               placeholder={placeholder}
-              rows={3}
+              mentionsEnabled
             />
           </div>
         ))}

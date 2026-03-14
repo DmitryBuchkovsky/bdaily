@@ -20,14 +20,14 @@ const queryClient = new QueryClient({
 
 createRoot(document.getElementById("root")!).render(
   <StrictMode>
-    <ThemeProvider overrides={brandingOverrides}>
-      <QueryClientProvider client={queryClient}>
+    <QueryClientProvider client={queryClient}>
+      <ThemeProvider overrides={brandingOverrides}>
         <BrowserRouter>
           <AuthProvider>
             <App />
           </AuthProvider>
         </BrowserRouter>
-      </QueryClientProvider>
-    </ThemeProvider>
+      </ThemeProvider>
+    </QueryClientProvider>
   </StrictMode>,
 );

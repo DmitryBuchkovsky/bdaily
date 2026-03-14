@@ -1,7 +1,7 @@
 import { Plus, Trash2, AlertTriangle } from "lucide-react";
 import type { Blocker } from "@/hooks/useDailyReport";
 import { FormInput } from "@/components/ui/FormInput";
-import { FormTextarea } from "@/components/ui/FormTextarea";
+import { RichTextEditor } from "@/components/ui/RichTextEditor";
 import { cn } from "@/lib/utils";
 
 interface BlockersSectionProps {
@@ -43,25 +43,59 @@ export function BlockersSection({ items, onChange }: BlockersSectionProps) {
               <div className="mb-3 flex items-center justify-between">
                 <select
                   value={item.type}
-                  onChange={(e) => onChange(updateAt(items, i, { type: e.target.value as Blocker["type"] }))}
-                  className={cn("rounded-full border-none px-3 py-1 text-xs font-medium outline-none", item.type === "TECHNICAL" ? "bg-primary/10 text-primary" : "bg-warning/10 text-warning")}
+                  onChange={(e) =>
+                    onChange(updateAt(items, i, { type: e.target.value as Blocker["type"] }))
+                  }
+                  className={cn(
+                    "rounded-full border-none px-3 py-1 text-xs font-medium outline-none",
+                    item.type === "TECHNICAL"
+                      ? "bg-primary/10 text-primary"
+                      : "bg-warning/10 text-warning",
+                  )}
                 >
                   <option value="TECHNICAL">Technical</option>
                   <option value="DEPENDENCY">Dependency</option>
                 </select>
-                <button onClick={() => onChange(items.filter((_, j) => j !== i))} className="rounded p-1 text-muted-foreground hover:bg-destructive/10 hover:text-destructive">
+                <button
+                  onClick={() => onChange(items.filter((_, j) => j !== i))}
+                  className="rounded p-1 text-muted-foreground hover:bg-destructive/10 hover:text-destructive"
+                >
                   <Trash2 className="h-4 w-4" />
                 </button>
               </div>
               <div className="space-y-3">
-                <FormTextarea value={item.description} onChange={(v) => onChange(updateAt(items, i, { description: v }))} placeholder="Describe the blocker..." rows={2} />
+                <RichTextEditor
+                  value={item.description}
+                  onChange={(v) => onChange(updateAt(items, i, { description: v }))}
+                  placeholder="Describe the blocker..."
+                  minimal
+                  mentionsEnabled
+                />
                 <div className="grid gap-3 sm:grid-cols-2">
-                  <FormInput value={item.impact ?? ""} onChange={(v) => onChange(updateAt(items, i, { impact: v }))} placeholder="Impact on work" />
-                  <FormInput value={item.need ?? ""} onChange={(v) => onChange(updateAt(items, i, { need: v }))} placeholder="What do you need?" />
+                  <RichTextEditor
+                    value={item.impact ?? ""}
+                    onChange={(v) => onChange(updateAt(items, i, { impact: v }))}
+                    placeholder="Impact on work"
+                    minimal
+                  />
+                  <RichTextEditor
+                    value={item.need ?? ""}
+                    onChange={(v) => onChange(updateAt(items, i, { need: v }))}
+                    placeholder="What do you need?"
+                    minimal
+                  />
                 </div>
                 <div className="grid gap-3 sm:grid-cols-2">
-                  <FormInput value={item.waitingFor ?? ""} onChange={(v) => onChange(updateAt(items, i, { waitingFor: v }))} placeholder="Waiting for (person/team)" />
-                  <FormInput value={item.expectedResolution ?? ""} onChange={(v) => onChange(updateAt(items, i, { expectedResolution: v }))} placeholder="Expected resolution" />
+                  <FormInput
+                    value={item.waitingFor ?? ""}
+                    onChange={(v) => onChange(updateAt(items, i, { waitingFor: v }))}
+                    placeholder="Waiting for (person/team)"
+                  />
+                  <FormInput
+                    value={item.expectedResolution ?? ""}
+                    onChange={(v) => onChange(updateAt(items, i, { expectedResolution: v }))}
+                    placeholder="Expected resolution"
+                  />
                 </div>
               </div>
             </div>

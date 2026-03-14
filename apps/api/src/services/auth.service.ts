@@ -1,9 +1,6 @@
 import bcrypt from "bcryptjs";
 import type { UserRepository } from "../repositories/user.repository.js";
-import {
-  ConflictError,
-  UnauthorizedError,
-} from "../middleware/error-handler.js";
+import { ConflictError, UnauthorizedError } from "../middleware/error-handler.js";
 
 export interface JwtFunctions {
   sign(payload: { sub: string; role: string }, options: { expiresIn: string }): string;
@@ -57,13 +54,16 @@ export class AuthService {
     };
   }
 
-  async login(input: {
-    email: string;
-    password: string;
-  }): Promise<AuthResponse> {
+  async login(input: { email: string; password: string }): Promise<AuthResponse> {
     const user = await this.userRepo.findByEmail(input.email);
     if (!user || !(await bcrypt.compare(input.password, user.passwordHash))) {
       throw new UnauthorizedError("Invalid email or password");
+    }
+
+    if (!user.isActive) {
+      throw new UnauthorizedError(
+        "Your account has been deactivated. Please contact your administrator.",
+      );
     }
 
     const tokens = this.signTokens({ id: user.id, role: user.role });
@@ -90,6 +90,9 @@ export class AuthService {
     if (!user) {
       throw new UnauthorizedError("User not found");
     }
+    if (!user.isActive) {
+      throw new UnauthorizedError("Your account has been deactivated");
+    }
 
     const tokens = this.signTokens({ id: user.id, role: user.role });
     return {
@@ -103,10 +106,10 @@ export class AuthService {
     };
   }
 
-  private signTokens(user: {
-    id: string;
-    role: string;
-  }): { accessToken: string; refreshToken: string } {
+  private signTokens(user: { id: string; role: string }): {
+    accessToken: string;
+    refreshToken: string;
+  } {
     const accessToken = this.jwt.sign(
       { sub: user.id, role: user.role },
       { expiresIn: this.ACCESS_EXPIRY },

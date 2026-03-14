@@ -9,6 +9,7 @@ import { BlockersSection } from "@/components/daily-form/BlockersSection";
 import { NotesSection } from "@/components/daily-form/NotesSection";
 import { QuestionsSection } from "@/components/daily-form/QuestionsSection";
 import { TestedTicketsSection } from "@/components/daily-form/TestedTicketsSection";
+import { PageInfoBlock } from "@/components/ui/PageInfoBlock";
 
 export function DailyFormPage() {
   const { date: dateParam } = useParams();
@@ -31,6 +32,18 @@ export function DailyFormPage() {
 
   return (
     <div className="mx-auto max-w-4xl space-y-6 pb-20">
+      <PageInfoBlock
+        storageKey="daily-form"
+        title="Daily Standup Report"
+        description="Fill in each section to share what you accomplished, what you're working on today, and anything blocking your progress. Your team and PM will see this on the Team Board."
+        tips={[
+          "Completed — what you finished since last standup (tasks, bug fixes)",
+          "Today — what you plan to work on, with ticket IDs if applicable",
+          "Blockers — anything preventing you from making progress",
+          "Notes & Questions — code reviews, deployment notes, or questions for the team",
+          "You can use @mentions in rich-text fields to tag teammates",
+        ]}
+      />
       <DailyFormHeader
         date={date}
         isExisting={form.isExisting}

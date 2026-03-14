@@ -9,12 +9,7 @@ export {
   TestResult,
 } from "./enums.js";
 
-export {
-  loginSchema,
-  registerSchema,
-  authUserSchema,
-  authResponseSchema,
-} from "./schemas/auth.js";
+export { loginSchema, registerSchema, authUserSchema, authResponseSchema } from "./schemas/auth.js";
 
 export {
   completedItemSchema,
@@ -34,11 +29,35 @@ export {
   burndownPointSchema,
 } from "./schemas/ticket.js";
 
+export { personSummarySchema, sprintSummarySchema, teamSummarySchema } from "./schemas/summary.js";
+
 export {
-  personSummarySchema,
-  sprintSummarySchema,
-  teamSummarySchema,
-} from "./schemas/summary.js";
+  ticketSystemConfigSchema,
+  createTeamSchema,
+  updateTeamSchema,
+  teamResponseSchema,
+} from "./schemas/team.js";
+
+export { addMemberSchema, updateMemberSchema } from "./schemas/admin.js";
+
+export {
+  updateProfileSchema,
+  changePasswordSchema,
+  notificationPreferenceSchema,
+} from "./schemas/profile.js";
+
+export {
+  ActionItemStatus,
+  createActionItemSchema,
+  updateActionItemSchema,
+  actionItemResponseSchema,
+} from "./schemas/action-item.js";
+
+export {
+  NotificationType,
+  notificationResponseSchema,
+  notificationListQuerySchema,
+} from "./schemas/notification.js";
 
 export type {
   LoginInput,
@@ -60,4 +79,15 @@ export type {
   PersonSummary,
   SprintSummary,
   TeamSummary,
+  CreateTeamInput,
+  UpdateTeamInput,
+  TeamResponse,
+  AddMemberInput,
+  UpdateMemberInput,
+  UpdateProfileInput,
+  NotificationPreferenceInput,
+  CreateActionItemInput,
+  UpdateActionItemInput,
+  ActionItemResponse,
+  NotificationResponse,
 } from "./types.js";

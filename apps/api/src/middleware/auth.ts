@@ -1,5 +1,5 @@
 import type { FastifyRequest, FastifyReply } from "fastify";
-import { UnauthorizedError } from "./error-handler.js";
+import { UnauthorizedError, ForbiddenError } from "./error-handler.js";
 
 declare module "@fastify/jwt" {
   interface FastifyJWT {
@@ -8,13 +8,16 @@ declare module "@fastify/jwt" {
   }
 }
 
-export async function authenticate(
-  request: FastifyRequest,
-  _reply: FastifyReply,
-): Promise<void> {
+export async function authenticate(request: FastifyRequest, _reply: FastifyReply): Promise<void> {
   try {
     await request.jwtVerify();
   } catch {
     throw new UnauthorizedError("Invalid or expired token");
+  }
+}
+
+export async function requireAdmin(request: FastifyRequest, _reply: FastifyReply): Promise<void> {
+  if (request.user.role !== "ADMIN") {
+    throw new ForbiddenError("Admin access required");
   }
 }

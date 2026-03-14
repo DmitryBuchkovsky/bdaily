@@ -7,8 +7,7 @@ export function LoginPage() {
   const { isAuthenticated } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
-  const from =
-    (location.state as { from?: { pathname: string } })?.from?.pathname ?? "/";
+  const from = (location.state as { from?: { pathname: string } })?.from?.pathname ?? "/";
 
   const form = useAuthForm(() => navigate(from, { replace: true }));
 
@@ -18,7 +17,7 @@ export function LoginPage() {
   }
 
   return (
-    <div className="flex min-h-screen items-center justify-center bg-background p-4">
+    <div className="flex min-h-screen flex-col items-center justify-center bg-background p-4">
       <div className="w-full max-w-md">
         <div className="mb-8 text-center">
           <div className="mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-xl bg-primary text-lg font-bold text-primary-foreground">
@@ -31,6 +30,17 @@ export function LoginPage() {
         </div>
         <AuthFormCard form={form} />
       </div>
+      <p className="mt-8 text-xs text-muted-foreground">
+        Powered by{" "}
+        <a
+          href="https://github.com/DmitryBuchkovsky/bdaily"
+          target="_blank"
+          rel="noopener noreferrer"
+          className="font-medium text-primary hover:underline"
+        >
+          BDaily
+        </a>
+      </p>
     </div>
   );
 }

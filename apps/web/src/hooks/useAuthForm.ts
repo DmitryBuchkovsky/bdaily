@@ -8,6 +8,8 @@ export interface UseAuthFormReturn {
   setEmail: (v: string) => void;
   password: string;
   setPassword: (v: string) => void;
+  confirmPassword: string;
+  setConfirmPassword: (v: string) => void;
   name: string;
   setName: (v: string) => void;
   teamId: string;
@@ -22,6 +24,7 @@ export function useAuthForm(onSuccess: () => void): UseAuthFormReturn {
   const [isLogin, setIsLogin] = useState(true);
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [confirmPassword, setConfirmPassword] = useState("");
   const [name, setName] = useState("");
   const [teamId, setTeamId] = useState("");
   const [error, setError] = useState("");
@@ -30,10 +33,23 @@ export function useAuthForm(onSuccess: () => void): UseAuthFormReturn {
   const toggleMode = useCallback(() => {
     setIsLogin((prev) => !prev);
     setError("");
+    setConfirmPassword("");
   }, []);
 
   const handleSubmit = useCallback(async () => {
     setError("");
+
+    if (!isLogin) {
+      if (password.length < 8) {
+        setError("Password must be at least 8 characters");
+        return;
+      }
+      if (password !== confirmPassword) {
+        setError("Passwords do not match");
+        return;
+      }
+    }
+
     setIsLoading(true);
     try {
       if (isLogin) {
@@ -47,7 +63,7 @@ export function useAuthForm(onSuccess: () => void): UseAuthFormReturn {
     } finally {
       setIsLoading(false);
     }
-  }, [isLogin, email, password, name, teamId, login, register, onSuccess]);
+  }, [isLogin, email, password, confirmPassword, name, teamId, login, register, onSuccess]);
 
   return {
     isLogin,
@@ -56,6 +72,8 @@ export function useAuthForm(onSuccess: () => void): UseAuthFormReturn {
     setEmail,
     password,
     setPassword,
+    confirmPassword,
+    setConfirmPassword,
     name,
     setName,
     teamId,

@@ -1,11 +1,6 @@
 import { z } from "zod";
 
-import {
-  loginSchema,
-  registerSchema,
-  authUserSchema,
-  authResponseSchema,
-} from "./schemas/auth.js";
+import { loginSchema, registerSchema, authUserSchema, authResponseSchema } from "./schemas/auth.js";
 
 import {
   completedItemSchema,
@@ -25,11 +20,21 @@ import {
   burndownPointSchema,
 } from "./schemas/ticket.js";
 
+import { personSummarySchema, sprintSummarySchema, teamSummarySchema } from "./schemas/summary.js";
+
+import { createTeamSchema, updateTeamSchema, teamResponseSchema } from "./schemas/team.js";
+
+import { addMemberSchema, updateMemberSchema } from "./schemas/admin.js";
+
+import { updateProfileSchema, notificationPreferenceSchema } from "./schemas/profile.js";
+
 import {
-  personSummarySchema,
-  sprintSummarySchema,
-  teamSummarySchema,
-} from "./schemas/summary.js";
+  createActionItemSchema,
+  updateActionItemSchema,
+  actionItemResponseSchema,
+} from "./schemas/action-item.js";
+
+import { notificationResponseSchema } from "./schemas/notification.js";
 
 // Auth types
 export type LoginInput = z.infer<typeof loginSchema>;
@@ -57,3 +62,24 @@ export type BurndownPoint = z.infer<typeof burndownPointSchema>;
 export type PersonSummary = z.infer<typeof personSummarySchema>;
 export type SprintSummary = z.infer<typeof sprintSummarySchema>;
 export type TeamSummary = z.infer<typeof teamSummarySchema>;
+
+// Team types
+export type CreateTeamInput = z.infer<typeof createTeamSchema>;
+export type UpdateTeamInput = z.infer<typeof updateTeamSchema>;
+export type TeamResponse = z.infer<typeof teamResponseSchema>;
+
+// Admin types
+export type AddMemberInput = z.infer<typeof addMemberSchema>;
+export type UpdateMemberInput = z.infer<typeof updateMemberSchema>;
+
+// Profile types
+export type UpdateProfileInput = z.infer<typeof updateProfileSchema>;
+export type NotificationPreferenceInput = z.infer<typeof notificationPreferenceSchema>;
+
+// Action item types
+export type CreateActionItemInput = z.infer<typeof createActionItemSchema>;
+export type UpdateActionItemInput = z.infer<typeof updateActionItemSchema>;
+export type ActionItemResponse = z.infer<typeof actionItemResponseSchema>;
+
+// Notification types
+export type NotificationResponse = z.infer<typeof notificationResponseSchema>;

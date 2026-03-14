@@ -14,15 +14,15 @@ function renderApp() {
   });
 
   return render(
-    <ThemeProvider>
-      <QueryClientProvider client={queryClient}>
+    <QueryClientProvider client={queryClient}>
+      <ThemeProvider>
         <MemoryRouter>
           <AuthProvider>
             <App />
           </AuthProvider>
         </MemoryRouter>
-      </QueryClientProvider>
-    </ThemeProvider>,
+      </ThemeProvider>
+    </QueryClientProvider>,
   );
 }
 

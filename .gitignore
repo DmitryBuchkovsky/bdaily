@@ -32,3 +32,6 @@ coverage/
 # Prisma
 apps/api/prisma/*.db
 apps/api/prisma/migrations/*.sql.bak
+
+# Uploads
+uploads/

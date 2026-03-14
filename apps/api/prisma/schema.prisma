@@ -50,6 +50,32 @@ enum TestResult {
   REJECTED
 }
 
+enum NotificationType {
+  MENTION
+  ACTION_ITEM_ASSIGNED
+  ACTION_ITEM_REMINDER
+  ACTION_ITEM_DONE_REQUEST
+  ACTION_ITEM_APPROVED
+  ACTION_ITEM_REJECTED
+  TEAM_INVITE
+  REPORT_COMMENT
+}
+
+enum ActionItemStatus {
+  PENDING
+  IN_PROGRESS
+  PENDING_APPROVAL
+  DONE
+  REJECTED
+  OVERDUE
+}
+
+enum NotificationChannel {
+  IN_APP
+  EMAIL
+  TELEGRAM
+}
+
 model User {
   id                String   @id @default(uuid()) @db.Uuid
   email             String   @unique
@@ -57,13 +83,23 @@ model User {
   passwordHash      String
   avatarUrl         String?
   role              Role     @default(MEMBER)
+  isActive          Boolean  @default(true)
   ticketSystemToken String?
   teamId            String   @db.Uuid
   team              Team     @relation(fields: [teamId], references: [id])
   createdAt         DateTime @default(now())
   updatedAt         DateTime @updatedAt
 
-  dailyReports DailyReport[]
+  dailyReports            DailyReport[]
+  notifications           Notification[]         @relation("notifications")
+  assignedActions         ActionItem[]           @relation("assignedActions")
+  receivedActions         ActionItem[]           @relation("receivedActions")
+  mentions                Mention[]              @relation("mentions")
+  mentionsMade            Mention[]              @relation("mentionsMade")
+  notificationPreference  NotificationPreference?
+  reportReactions         ReportReaction[]
+  reportComments          ReportComment[]
+  passwordResetTokens     PasswordResetToken[]
 
   @@map("users")
 }
@@ -73,10 +109,14 @@ model Team {
   name               String
   ticketSystemType   TicketSystemType
   ticketSystemConfig Json
+  themeConfig        Json?
+  logoPath           String?
+  faviconPath        String?
   createdAt          DateTime         @default(now())
   updatedAt          DateTime         @updatedAt
 
-  users User[]
+  users       User[]
+  actionItems ActionItem[]
 
   @@map("teams")
 }
@@ -95,6 +135,10 @@ model DailyReport {
   additionalNotes AdditionalNotes?
   questions       Question[]
   testedTickets   TestedTicket[]
+  actionItems     ActionItem[]
+  mentions        Mention[]
+  reactions       ReportReaction[]
+  comments        ReportComment[]
 
   @@unique([userId, date])
   @@map("daily_reports")
@@ -186,4 +230,134 @@ model TestedTicket {
   updatedAt     DateTime    @updatedAt
 
   @@map("tested_tickets")
+}
+
+model Notification {
+  id        String           @id @default(uuid()) @db.Uuid
+  userId    String           @db.Uuid
+  user      User             @relation("notifications", fields: [userId], references: [id], onDelete: Cascade)
+  type      NotificationType
+  title     String
+  message   String           @db.Text
+  metadata  Json?
+  read      Boolean          @default(false)
+  readAt    DateTime?
+  createdAt DateTime         @default(now())
+
+  @@index([userId, read])
+  @@index([userId, createdAt])
+  @@map("notifications")
+}
+
+model ActionItem {
+  id             String           @id @default(uuid()) @db.Uuid
+  assignedById   String           @db.Uuid
+  assignedBy     User             @relation("assignedActions", fields: [assignedById], references: [id])
+  assigneeId     String           @db.Uuid
+  assignee       User             @relation("receivedActions", fields: [assigneeId], references: [id])
+  teamId         String           @db.Uuid
+  team           Team             @relation(fields: [teamId], references: [id])
+  dailyReportId  String?          @db.Uuid
+  dailyReport    DailyReport?     @relation(fields: [dailyReportId], references: [id])
+  title          String
+  description    String?          @db.Text
+  dueDate        DateTime         @db.Date
+  status         ActionItemStatus @default(PENDING)
+  completedAt    DateTime?
+  lastRemindedAt DateTime?
+  createdAt      DateTime         @default(now())
+  updatedAt      DateTime         @updatedAt
+
+  @@index([assigneeId, status])
+  @@index([dueDate, status])
+  @@map("action_items")
+}
+
+model Mention {
+  id              String       @id @default(uuid()) @db.Uuid
+  mentionedUserId String       @db.Uuid
+  mentionedUser   User         @relation("mentions", fields: [mentionedUserId], references: [id])
+  mentionedById   String       @db.Uuid
+  mentionedBy     User         @relation("mentionsMade", fields: [mentionedById], references: [id])
+  dailyReportId   String?      @db.Uuid
+  dailyReport     DailyReport? @relation(fields: [dailyReportId], references: [id], onDelete: Cascade)
+  field           String
+  createdAt       DateTime     @default(now())
+
+  @@map("mentions")
+}
+
+model NotificationPreference {
+  id             String  @id @default(uuid()) @db.Uuid
+  userId         String  @unique @db.Uuid
+  user           User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+  email          Boolean @default(true)
+  inApp          Boolean @default(true)
+  telegram       Boolean @default(false)
+  telegramChatId String?
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  @@map("notification_preferences")
+}
+
+model ReportReaction {
+  id            String      @id @default(uuid()) @db.Uuid
+  dailyReportId String      @db.Uuid
+  dailyReport   DailyReport @relation(fields: [dailyReportId], references: [id], onDelete: Cascade)
+  userId        String      @db.Uuid
+  user          User        @relation(fields: [userId], references: [id], onDelete: Cascade)
+  emoji         String      @db.VarChar(8)
+  createdAt     DateTime    @default(now())
+
+  @@unique([dailyReportId, userId, emoji])
+  @@index([dailyReportId])
+  @@map("report_reactions")
+}
+
+model ReportComment {
+  id            String      @id @default(uuid()) @db.Uuid
+  dailyReportId String      @db.Uuid
+  dailyReport   DailyReport @relation(fields: [dailyReportId], references: [id], onDelete: Cascade)
+  userId        String      @db.Uuid
+  user          User        @relation(fields: [userId], references: [id], onDelete: Cascade)
+  content       String      @db.Text
+  parentId      String?     @db.Uuid
+  parent        ReportComment?  @relation("CommentReplies", fields: [parentId], references: [id], onDelete: Cascade)
+  replies       ReportComment[] @relation("CommentReplies")
+  resolved      Boolean     @default(false)
+  createdAt     DateTime    @default(now())
+  updatedAt     DateTime    @updatedAt
+
+  @@index([dailyReportId])
+  @@index([parentId])
+  @@map("report_comments")
+}
+
+model EmailTemplate {
+  id          String   @id @default(uuid()) @db.Uuid
+  slug        String   @unique
+  name        String
+  subject     String
+  bodyHtml    String   @db.Text
+  description String?
+  variables   String[] @default([])
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@map("email_templates")
+}
+
+model PasswordResetToken {
+  id        String   @id @default(uuid()) @db.Uuid
+  userId    String   @db.Uuid
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  token     String   @unique
+  expiresAt DateTime
+  usedAt    DateTime?
+  createdAt DateTime @default(now())
+
+  @@index([token])
+  @@index([userId])
+  @@map("password_reset_tokens")
 }

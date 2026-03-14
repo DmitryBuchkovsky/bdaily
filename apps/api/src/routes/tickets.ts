@@ -2,10 +2,7 @@ import type { FastifyInstance } from "fastify";
 import type { UserRepository } from "../repositories/user.repository.js";
 import type { TicketSystemConfig } from "../services/ticket-system/strategy.js";
 import { authenticate } from "../middleware/auth.js";
-import {
-  NotFoundError,
-  ValidationError,
-} from "../middleware/error-handler.js";
+import { NotFoundError, ValidationError } from "../middleware/error-handler.js";
 import { createTicketStrategy } from "../services/ticket-system/factory.js";
 
 interface SearchQuery {
@@ -16,28 +13,31 @@ interface TicketParams {
   id?: string;
 }
 
-export function ticketRoutes(
-  userRepo: UserRepository,
-): (app: FastifyInstance) => Promise<void> {
+interface StoredConfig {
+  baseUrl: string;
+  projectIds?: string[];
+  token?: string;
+}
+
+function buildTicketConfig(user: { team: { ticketSystemConfig: unknown } }): TicketSystemConfig {
+  const stored = user.team.ticketSystemConfig as StoredConfig;
+  if (!stored.token) {
+    throw new ValidationError(
+      "No ticket system API token configured. Ask your admin to set one in Team Settings.",
+    );
+  }
+  return { ...stored, token: stored.token };
+}
+
+export function ticketRoutes(userRepo: UserRepository): (app: FastifyInstance) => Promise<void> {
   return async (app: FastifyInstance): Promise<void> => {
     app.addHook("preHandler", authenticate);
 
     app.get("/assigned", async (request, reply) => {
       const user = await userRepo.findByIdWithTeam(request.user.sub);
       if (!user) throw new NotFoundError("User not found");
-      if (!user.ticketSystemToken) {
-        throw new ValidationError(
-          "No ticket system token configured. Update your profile to add one.",
-        );
-      }
 
-      const config: TicketSystemConfig = {
-        ...(user.team.ticketSystemConfig as {
-          baseUrl: string;
-          projectIds?: string[];
-        }),
-        token: user.ticketSystemToken,
-      };
+      const config = buildTicketConfig(user);
       const strategy = createTicketStrategy(user.team.ticketSystemType);
       await strategy.authenticate(config);
       const tickets = await strategy.getAssignedTickets(request.user.sub);
@@ -45,38 +45,22 @@ export function ticketRoutes(
       return reply.send({ data: tickets, error: null, meta: null });
     });
 
-    app.get<{ Querystring: SearchQuery }>(
-      "/search",
-      async (request, reply) => {
-        const { q } = request.query;
-        if (!q) {
-          throw new ValidationError(
-            "Search query parameter 'q' is required",
-          );
-        }
+    app.get<{ Querystring: SearchQuery }>("/search", async (request, reply) => {
+      const { q } = request.query;
+      if (!q) {
+        throw new ValidationError("Search query parameter 'q' is required");
+      }
 
-        const user = await userRepo.findByIdWithTeam(request.user.sub);
-        if (!user) throw new NotFoundError("User not found");
-        if (!user.ticketSystemToken) {
-          throw new ValidationError(
-            "No ticket system token configured. Update your profile to add one.",
-          );
-        }
+      const user = await userRepo.findByIdWithTeam(request.user.sub);
+      if (!user) throw new NotFoundError("User not found");
 
-        const config: TicketSystemConfig = {
-          ...(user.team.ticketSystemConfig as {
-            baseUrl: string;
-            projectIds?: string[];
-          }),
-          token: user.ticketSystemToken,
-        };
-        const strategy = createTicketStrategy(user.team.ticketSystemType);
-        await strategy.authenticate(config);
-        const tickets = await strategy.searchTickets(q);
+      const config = buildTicketConfig(user);
+      const strategy = createTicketStrategy(user.team.ticketSystemType);
+      await strategy.authenticate(config);
+      const tickets = await strategy.searchTickets(q);
 
-        return reply.send({ data: tickets, error: null, meta: null });
-      },
-    );
+      return reply.send({ data: tickets, error: null, meta: null });
+    });
 
     app.get<{ Params: TicketParams }>("/:id", async (request, reply) => {
       const { id } = request.params;
@@ -84,19 +68,8 @@ export function ticketRoutes(
 
       const user = await userRepo.findByIdWithTeam(request.user.sub);
       if (!user) throw new NotFoundError("User not found");
-      if (!user.ticketSystemToken) {
-        throw new ValidationError(
-          "No ticket system token configured. Update your profile to add one.",
-        );
-      }
 
-      const config: TicketSystemConfig = {
-        ...(user.team.ticketSystemConfig as {
-          baseUrl: string;
-          projectIds?: string[];
-        }),
-        token: user.ticketSystemToken,
-      };
+      const config = buildTicketConfig(user);
       const strategy = createTicketStrategy(user.team.ticketSystemType);
       await strategy.authenticate(config);
       const ticket = await strategy.getTicketDetails(id);

@@ -1,5 +1,5 @@
-import { FormInput } from "@/components/ui/FormInput";
 import { FormSelect } from "@/components/ui/FormSelect";
+import { RichTextEditor } from "@/components/ui/RichTextEditor";
 import type { Question } from "@/hooks/useDailyReport";
 
 interface QuestionsSectionProps {
@@ -50,12 +50,15 @@ export function QuestionsSection({ items, onChange }: QuestionsSectionProps) {
                 onChange={(v) => update(i, { type: v as Question["type"] })}
                 options={typeOptions}
               />
-              <FormInput
-                value={q.content}
-                onChange={(v) => update(i, { content: v })}
-                placeholder="Your question..."
-                className="flex-1"
-              />
+              <div className="flex-1">
+                <RichTextEditor
+                  value={q.content}
+                  onChange={(v) => update(i, { content: v })}
+                  placeholder="Your question..."
+                  minimal
+                  mentionsEnabled
+                />
+              </div>
               <button
                 onClick={() => remove(i)}
                 className="text-sm text-muted-foreground hover:text-destructive"

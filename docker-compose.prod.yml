@@ -1,0 +1,59 @@
+services:
+  db:
+    container_name: bdaily-db
+    image: postgres:16-alpine
+    restart: always
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-bdaily}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?Set POSTGRES_PASSWORD in .env.production}
+      POSTGRES_DB: ${POSTGRES_DB:-bdaily}
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-bdaily}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  api:
+    container_name: bdaily-api
+    build:
+      context: .
+      dockerfile: apps/api/Dockerfile
+    restart: always
+    ports:
+      - "127.0.0.1:8091:8091"
+    environment:
+      DATABASE_URL: postgresql://${POSTGRES_USER:-bdaily}:${POSTGRES_PASSWORD}@bdaily-db:5432/${POSTGRES_DB:-bdaily}
+      JWT_SECRET: ${JWT_SECRET:?Set JWT_SECRET in .env.production}
+      PORT: 8091
+      NODE_ENV: production
+      CORS_ORIGIN: ${CORS_ORIGIN:-https://daily.yourcompany.com}
+      EMAIL_FROM: ${EMAIL_FROM:-noreply@yourcompany.com}
+      SMTP_HOST: ${SMTP_HOST:-}
+      SMTP_PORT: ${SMTP_PORT:-587}
+      SMTP_USER: ${SMTP_USER:-}
+      SMTP_PASS: ${SMTP_PASS:-}
+      TELEGRAM_BOT_TOKEN: ${TELEGRAM_BOT_TOKEN:-}
+    depends_on:
+      db:
+        condition: service_healthy
+    volumes:
+      - uploads:/app/uploads
+
+  web:
+    container_name: bdaily-web
+    build:
+      context: .
+      dockerfile: apps/web/Dockerfile
+      args:
+        VITE_API_URL: ${VITE_API_URL:-/api}
+    restart: always
+    ports:
+      - "127.0.0.1:8090:80"
+    depends_on:
+      - api
+
+volumes:
+  pgdata:
+  uploads:
